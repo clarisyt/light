@@ -2,5 +2,5 @@ package template
 
 const (
 	TagMark         = "// @"
-	FlashMainTag = "gen"
+	LightMainTag = "light"
 )

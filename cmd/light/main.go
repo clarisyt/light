@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/claris/light/generator"
 	"os"
 	"strings"
 
@@ -19,6 +21,7 @@ var (
 func main() {
 	flag.Parse()
 
+	fmt.Println(*flagFileName)
 	info, err := astra.ParseFile( *flagFileName)
 	if err != nil {
 		lg.Logger.Logln(0, "fatal:", err)
@@ -33,6 +36,32 @@ func main() {
 		lg.Logger.Logln(4, listInterfaces(info.Interfaces))
 		os.Exit(1)
 	}
+	fmt.Println(i)
+	ctx, err := prepareContext(*flagFileName, i)
+	if err != nil {
+		lg.Logger.Logln(0, "fatal:", err)
+		os.Exit(1)
+	}
+	fmt.Println(ctx)
+}
+
+func prepareContext(filename string, iface *types.Interface) (context.Context, error) {
+	ctx := context.Background()
+	p, err := astra.ResolvePackagePath(filename)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(p)
+	ctx = template.WithSourcePackageImport(ctx, p)
+
+	set := template.TagsSet{}
+	genTags := mstrings.FetchTags(iface.Docs, generator.TagMark+generator.MicrogenMainTag)
+	for _, tag := range genTags {
+		set.Add(tag)
+	}
+	ctx = template.WithTags(ctx, set)
+
+	return ctx, nil
 }
 
 func listInterfaces(ii []types.Interface) string {
@@ -45,6 +74,7 @@ func listInterfaces(ii []types.Interface) string {
 
 func findInterface(file *types.File) *types.Interface {
 	for i := range file.Interfaces {
+		fmt.Printf("doc is %v\n", file.Interfaces[i].Docs)
 		if docsContainMicrogenTag(file.Interfaces[i].Docs) {
 			return &file.Interfaces[i]
 		}
@@ -54,6 +84,7 @@ func findInterface(file *types.File) *types.Interface {
 
 func docsContainMicrogenTag(strs []string) bool {
 	for _, str := range strs {
+		fmt.Printf("s = %v\n", str)
 		if strings.HasPrefix(str, generator.TagMark+generator.LightMainTag) {
 			return true
 		}
