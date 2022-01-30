@@ -5,6 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/claris/light/generator"
+	"github.com/claris/light/generator/template"
+
+	mstrings "github.com/claris/light/generator/strings"
+
 	"os"
 	"strings"
 
@@ -55,7 +59,7 @@ func prepareContext(filename string, iface *types.Interface) (context.Context, e
 	ctx = template.WithSourcePackageImport(ctx, p)
 
 	set := template.TagsSet{}
-	genTags := mstrings.FetchTags(iface.Docs, generator.TagMark+generator.MicrogenMainTag)
+	genTags := mstrings.FetchTags(iface.Docs, generator.TagMark+generator.LightMainTag)
 	for _, tag := range genTags {
 		set.Add(tag)
 	}
@@ -75,14 +79,14 @@ func listInterfaces(ii []types.Interface) string {
 func findInterface(file *types.File) *types.Interface {
 	for i := range file.Interfaces {
 		fmt.Printf("doc is %v\n", file.Interfaces[i].Docs)
-		if docsContainMicrogenTag(file.Interfaces[i].Docs) {
+		if docsContainLightTag(file.Interfaces[i].Docs) {
 			return &file.Interfaces[i]
 		}
 	}
 	return nil
 }
 
-func docsContainMicrogenTag(strs []string) bool {
+func docsContainLightTag(strs []string) bool {
 	for _, str := range strs {
 		fmt.Printf("s = %v\n", str)
 		if strings.HasPrefix(str, generator.TagMark+generator.LightMainTag) {
