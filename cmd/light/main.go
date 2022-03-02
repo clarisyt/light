@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/claris/light/generator"
 	"github.com/claris/light/generator/template"
+	"path/filepath"
 
 	mstrings "github.com/claris/light/generator/strings"
 
@@ -19,6 +20,9 @@ import (
 
 var (
 	flagFileName     = flag.String("file", "service.go", "Path to input file with interface.")
+	flagOutputDir    = flag.String("out", ".", "Output directory.")
+	flagGenProtofile = flag.String(".proto", "", "Package field in protobuf file. If not empty, service.proto file will be generated.")
+	flagGenMain      = flag.Bool(generator.MainTag, false, "Generate main.go file.")
 )
 
 
@@ -46,7 +50,29 @@ func main() {
 		lg.Logger.Logln(0, "fatal:", err)
 		os.Exit(1)
 	}
+
+	absOutputDir, err := filepath.Abs(*flagOutputDir)
+	if err != nil {
+		lg.Logger.Logln(0, "fatal:", err)
+		os.Exit(1)
+	}
+	fmt.Printf("absOutDir = %s\n", absOutputDir)
 	fmt.Println(ctx)
+
+	units, err := generator.ListTemplatesForGen(ctx, i, absOutputDir, *flagFileName, *flagGenProtofile, *flagGenMain)
+	if err != nil {
+		lg.Logger.Logln(0, "fatal:", err)
+		os.Exit(1)
+	}
+
+	for _, unit := range units {
+		err := unit.Generate(ctx)
+		if err != nil && err != generator.EmptyStrategyError {
+			lg.Logger.Logln(0, "fatal:", unit.Path(), err)
+			os.Exit(1)
+		}
+	}
+	lg.Logger.Logln(1, "all files successfully generated")
 }
 
 func prepareContext(filename string, iface *types.Interface) (context.Context, error) {
@@ -55,7 +81,7 @@ func prepareContext(filename string, iface *types.Interface) (context.Context, e
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(p)
+	fmt.Printf(" p = %v\n ", p)
 	ctx = template.WithSourcePackageImport(ctx, p)
 
 	set := template.TagsSet{}

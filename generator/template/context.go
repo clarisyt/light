@@ -11,6 +11,10 @@ func WithSourcePackageImport(parent context.Context, val string) context.Context
 	return context.WithValue(parent, spi, val)
 }
 
+func Tags(ctx context.Context) TagsSet {
+	return ctx.Value(mainTagsContextKey).(TagsSet)
+}
+
 func WithTags(parent context.Context, tt TagsSet) context.Context {
 	return context.WithValue(parent, mainTagsContextKey, tt)
 }
